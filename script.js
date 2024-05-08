@@ -1,41 +1,58 @@
 const pianoKeys = document.querySelectorAll(".piano-keys .key"),
-volumeSlider = document.querySelector(".volume-slider input"),
-keysCheckbox = document.querySelector(".keys-checkbox input");
+  volumeSlider = document.querySelector(".volume-slider input"),
+  keysCheckbox = document.querySelector(".keys-checkbox input");
 
 let allKeys = [],
-audio = new Audio(`../tunes/a.wav`); // by default, audio src is "a" tune
+  audio = new Audio(), // Create a single audio instance
+  pressedKeys = []; // Array to keep track of pressed keys
+
+// Preload all audio files
+const audioFiles = {};
+pianoKeys.forEach((key) => {
+  const keyName = key.dataset.key;
+  audioFiles[keyName] = new Audio(`tunes/${keyName}.wav`);
+});
 
 const playTune = (key) => {
-    audio.src = `tunes/${key}.wav`; // passing audio src based on key pressed 
-    audio.play(); // playing audio
+  audioFiles[key].currentTime = 0; // Rewind audio to start
+  audioFiles[key].play(); // Play the audio file for the given key
+  const clickedKey = document.querySelector(`[data-key="${key}"]`);
+  clickedKey.classList.add("active");
+  setTimeout(() => {
+    clickedKey.classList.remove("active");
+  }, 150);
+};
 
-    const clickedKey = document.querySelector(`[data-key="${key}"]`); // getting clicked key element
-    clickedKey.classList.add("active"); // adding active class to the clicked key element
-    setTimeout(() => { // removing active class after 150 ms from the clicked key element
-        clickedKey.classList.remove("active");
-    }, 150);
-}
+const handleKeyDown = (e) => {
+  const key = e.key.toLowerCase();
+  if (allKeys.includes(key) && !pressedKeys.includes(key)) {
+    playTune(key);
+    pressedKeys.push(key);
+  }
+};
 
-pianoKeys.forEach(key => {
-    allKeys.push(key.dataset.key); // adding data-key value to the allKeys array
-    // calling playTune function with passing data-key value as an argument
-    key.addEventListener("click", () => playTune(key.dataset.key));
+const handleKeyUp = (e) => {
+  const key = e.key.toLowerCase();
+  const index = pressedKeys.indexOf(key);
+  if (index !== -1) {
+    pressedKeys.splice(index, 1);
+  }
+};
+
+pianoKeys.forEach((key) => {
+  allKeys.push(key.dataset.key);
+  key.addEventListener("click", () => playTune(key.dataset.key));
 });
 
 const handleVolume = (e) => {
-    audio.volume = e.target.value; // passing the range slider value as an audio volume
-}
+  audio.volume = e.target.value;
+};
 
 const showHideKeys = () => {
-    // toggling hide class from each key on the checkbox click
-    pianoKeys.forEach(key => key.classList.toggle("hide"));
-}
-
-const pressedKey = (e) => {
-    // if the pressed key is in the allKeys array, only call the playTune function
-    if(allKeys.includes(e.key)) playTune(e.key);
-}
+  pianoKeys.forEach((key) => key.classList.toggle("hide"));
+};
 
 keysCheckbox.addEventListener("click", showHideKeys);
 volumeSlider.addEventListener("input", handleVolume);
-document.addEventListener("keydown", pressedKey);
+document.addEventListener("keydown", handleKeyDown);
+document.addEventListener("keyup", handleKeyUp);
